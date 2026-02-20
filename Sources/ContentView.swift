@@ -57,7 +57,7 @@ struct ContentView: View {
             Divider()
             
             Button(action: {
-                if let url = URL(string: "https://paypal.me/yourusername") {
+                if let url = URL(string: "https://www.paypal.com/donate/?business=6SUDEH9BDL3WQ&no_recurring=0&item_name=Appreciate+your+kind+support%21&currency_code=EUR") {
                     NSWorkspace.shared.open(url)
                 }
             }) {
