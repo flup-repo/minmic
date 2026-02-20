@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>MinMic</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.minmic.app</string>
+    <key>CFBundleName</key>
+    <string>MinMic</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>MinMic needs to control media apps (Spotify, Apple Music) to mute them.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>MinMic needs microphone access to detect audio input (optional depending on use-case).</string>
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>
