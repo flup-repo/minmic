@@ -17,7 +17,7 @@
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>MinMic needs to control media apps (Spotify, Apple Music) to mute them.</string>
+    <string>MinMic needs to control media apps (Spotify, Apple Music, Chrome, Safari) to lower their volume during dictation.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>MinMic needs microphone access to detect audio input (optional depending on use-case).</string>
     <key>com.apple.security.device.audio-input</key>
