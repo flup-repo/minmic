@@ -1,5 +1,6 @@
 import Foundation
 import CoreAudio
+import AudioToolbox
 import Combine
 
 class AudioDucker: ObservableObject {
@@ -40,19 +41,12 @@ class AudioDucker: ObservableObject {
         guard deviceID != kAudioObjectUnknown else { return }
         
         originalVolumes.removeAll()
-        
-        var targets: [(channel: UInt32, startVol: Float32, targetVol: Float32)] = []
-        
-        for channel in 0..<16 {
-            guard hasVolumeControl(for: deviceID, channel: UInt32(channel)) else { continue }
-            let vol = getVolume(for: deviceID, channel: UInt32(channel))
-            if vol >= 0.0 {
-                originalVolumes[UInt32(channel)] = vol
-                let targetVol = vol * Float32(1.0 - duckingPercentage)
-                targets.append((UInt32(channel), vol, targetVol))
-            }
-        }
-        
+
+        let vol = getMasterVolume(for: deviceID)
+        originalVolumes[0] = vol
+        let targetVol = vol * Float32(1.0 - duckingPercentage)
+        let targets: [(channel: UInt32, startVol: Float32, targetVol: Float32)] = [(0, vol, targetVol)]
+
         fadeVolumes(deviceID: deviceID, targets: targets, duration: 0.15)
         runMediaAppleScript(duck: true)
     }
@@ -65,8 +59,8 @@ class AudioDucker: ObservableObject {
         
         var targets: [(channel: UInt32, startVol: Float32, targetVol: Float32)] = []
         for (channel, vol) in originalVolumes {
-            let currentVol = getVolume(for: defaultOutputDeviceID, channel: channel)
-            targets.append((channel, currentVol >= 0 ? currentVol : 0, vol))
+            let currentVol = getMasterVolume(for: defaultOutputDeviceID)
+            targets.append((channel, currentVol, vol))
         }
         
         fadeVolumes(deviceID: defaultOutputDeviceID, targets: targets, duration: 0.15)
@@ -99,7 +93,30 @@ class AudioDucker: ObservableObject {
     }
     
     // MARK: - Core Audio Helpers
-    
+
+    private func masterVolumeAddress() -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(
+            mSelector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+    }
+
+    private func getMasterVolume(for deviceID: AudioDeviceID) -> Float32 {
+        var volume: Float32 = 1.0
+        var addr = masterVolumeAddress()
+        var size = UInt32(MemoryLayout<Float32>.size)
+        AudioObjectGetPropertyData(deviceID, &addr, 0, nil, &size, &volume)
+        return volume
+    }
+
+    private func setVolume(for deviceID: AudioDeviceID, channel: UInt32, volume: Float32) {
+        var vol = max(0.0, min(1.0, volume))
+        var addr = masterVolumeAddress()
+        let size = UInt32(MemoryLayout<Float32>.size)
+        AudioObjectSetPropertyData(deviceID, &addr, 0, nil, size, &vol)
+    }
+
     private func getDefaultOutputDeviceID() -> AudioDeviceID {
         var defaultOutputDeviceID = kAudioObjectUnknown
         var propertyAddress = AudioObjectPropertyAddress(
@@ -148,43 +165,6 @@ class AudioDucker: ObservableObject {
         } else {
             DispatchQueue.main.async { self.activeDeviceName = "Unknown" }
         }
-    }
-    
-    private func hasVolumeControl(for deviceID: AudioDeviceID, channel: UInt32) -> Bool {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyVolumeScalar,
-            mScope: kAudioDevicePropertyScopeOutput,
-            mElement: channel
-        )
-        return AudioObjectHasProperty(deviceID, &propertyAddress)
-    }
-    
-    private func getVolume(for deviceID: AudioDeviceID, channel: UInt32) -> Float32 {
-        var volume: Float32 = -1.0
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyVolumeScalar,
-            mScope: kAudioDevicePropertyScopeOutput,
-            mElement: channel
-        )
-        var propertySize = UInt32(MemoryLayout<Float32>.size)
-        
-        let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &volume)
-        if status == noErr {
-            return volume
-        }
-        return -1.0
-    }
-    
-    private func setVolume(for deviceID: AudioDeviceID, channel: UInt32, volume: Float32) {
-        var varVol = max(0.0, min(1.0, volume))
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyVolumeScalar,
-            mScope: kAudioDevicePropertyScopeOutput,
-            mElement: channel
-        )
-        let propertySize = UInt32(MemoryLayout<Float32>.size)
-        
-        AudioObjectSetPropertyData(deviceID, &propertyAddress, 0, nil, propertySize, &varVol)
     }
     
     private func startListeningToDeviceChanges() {
