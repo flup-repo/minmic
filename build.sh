@@ -20,6 +20,9 @@ swiftc Sources/*.swift -o "$MACOS_DIR/$APP_NAME" -target arm64-apple-macosx13.0 
 
 echo "Build complete: $APP_BUNDLE"
 
+# Ad-hoc sign so macOS TCC can track permissions (Accessibility, Automation) across launches
+codesign --sign - --force --deep "$APP_BUNDLE"
+
 # Build DMG
 DMG_NAME="${APP_NAME}.dmg"
 if [ -f "$DMG_NAME" ]; then
